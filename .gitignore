@@ -8,3 +8,6 @@
 /requirement/*
 !/requirement/.gitkeep
 
+/png/*
+!/png/.gitkeep
+

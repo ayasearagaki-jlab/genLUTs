@@ -8,7 +8,7 @@ void writingLUT_r(){
 	double input_phi=0.35;//FIXME
 	int noflayer=2;//FIXME
 	double input_r=500.0;//FIXME
-	int resolution=10000;
+	int resolution=2048*2;
 	lut.RebinRInputAllPlane(resolution); 
 	cout<<"input phi is "<<input_phi<<" inpur r is "<<input_r<<" layer number is "<<noflayer<<" using resolution="<<resolution<<" LUT"<<endl;
 	if(input_phi>lut.GetMaxInputPhi()||input_phi<lut.GetMinInputPhi()){
@@ -53,9 +53,11 @@ void writingLUT_r(){
 	}//for loop in tree 
 
 	vector<TH2D*>v_hout=lut.GetEachHoughPlane();
-	
+	TCanvas *c1=new TCanvas("c1","c1");	
 	v_hout.at(noflayer)->Draw("colz");
 
+	c1->SaveAs(Form("../png/res_%d_layer_%d_phi_%f_r_%f.png",resolution,noflayer,input_phi,input_r));
+	
 	LUT->Close();
 	
 
