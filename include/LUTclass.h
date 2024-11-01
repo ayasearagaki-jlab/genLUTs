@@ -88,6 +88,7 @@ public:
 	int GetNbitsInputPhi(){return in_phi_bin;}
 	int GetNbitsOutputPhi(){return phi_bin;}
 	int GetNbitsqA_pT(){return qA_pT_bin;}
+	int Getnofbit(){return nofbit;}
 
 	void AddCountHoughPlane(int xbin,int ybin, int layer){
 		if(xbin<1||ybin<1||xbin>hout->GetNbinsX()||ybin>hout->GetNbinsY()||layer<0||layer>=6){
@@ -144,7 +145,15 @@ public:
 		}//for loop
 	}
 
+	TH2D* GetAndMergeHoughPlane(){
+		TH2D *hout_merge=new TH2D("out_merge","out_merge;phi_t;qA/p_{T}",phi_bin,phi_min,phi_max,qA_pT_bin,qA_pT_min,qA_pT_max);
 
+		for(int ri=0;ri<z.size();ri++){hout_merge->Add(v_hout.at(ri));}
+		
+		return hout_merge;
+
+
+	}
 
 
 
@@ -164,8 +173,9 @@ private:
 	double in_phi_min=-4.0;/*-1.*TMath::Pi();*/
   	double in_phi_max=4.0;/*TMath::Pi();*/
   	double in_r_min=0.0;//ITkのいつもの図から取ってきた
-  	double in_r_max=1024;  
-	int in_phi_bin=pow(2,16);
+  	double in_r_max=1023.984375;  
+	int nofbit=16;
+	int in_phi_bin=pow(2,nofbit);
 	TH2D* hin;
 	std::vector<TH2D*> v_hin;
 	vector<vector<double>> v_phi_L;

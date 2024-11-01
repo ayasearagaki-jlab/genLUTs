@@ -11,8 +11,7 @@ struct LUT
 {
   int input_begin;
   int input_end;
-  int input_rbit_start;
-  int input_rbit_end;
+  int input_rbit;
   int layer;
   std::vector<pos> output;
 };
@@ -23,15 +22,15 @@ void genLUT_r(){
   int max_LUT=300e3;
   int max_FF=3.4e6;
   
-  int resolution=4096*2;//FIXME resolution of r bit
-
+  int resolution=1024;//FIXME resolution of r bit
+  const int nlayer=lut.GetNLayer();	
   lut.RebinRInputAllPlane(resolution); 
 
   TH2D *hout=lut.GetHoughPlane();
   TH2D *hin=lut.GetInputPlane();
  
   vector<TH2D*>v_hin=lut.GetInputLPlane();
-  std::vector<LUT> v_LUT;
+  vector<vector<vector<LUT>>> v_LUT(nlayer,vector<vector<LUT>>(128,vector<LUT>()));
   std::vector<int> v_count;
   vector<double>r_min=lut.GetminR();
   vector<double>r_max=lut.GetmaxR();
@@ -48,7 +47,6 @@ void genLUT_r(){
   vector<double>phi_l_max=lut.GetMaxInputLPhi();
   vector<double>phi_l_min=lut.GetMinInputLPhi();
   int *v_dphi=lut.GetdPhi();//use this as dphi[6] watch hedder file!!
- const int nlayer=lut.GetNLayer();	 
   std::cout<<std::endl;
 	
   TFile* fout= TFile::Open(Form("../requirement/requirement-%d-%d_ver_r_%d.root",lut.GetNbitsqA_pT(),lut.GetNbitsOutputPhi(),resolution),"recreate");
@@ -111,33 +109,40 @@ for(xi=1;xi<=hout->GetNbinsX();xi++){
 	//printf("%f %f %d %d \n",phi_min,phi_max,in_min,in_max);
 	//getchar();
 	requirement->Fill();
+	int msb=in_min>>(lut.Getnofbit()-10);
+	if(msb>127){msb=127;}
 	if(in_min>lut.GetNbitsInputPhi()||in_max<=0){
 	  printf("\033[1A\033[1Kout of range [%d,%d]\n\n",xi,yi);
 	}else{
 	  bool toBeFilled=true;
-	  /*if(v_LUT.size()!=0){
-	    for(auto LUT_i:v_LUT){
+	  if(v_LUT.at(ri).at(msb).size()!=0){
+	    for(auto LUT_i:v_LUT.at(ri).at(msb)){
 	      if(LUT_i.input_begin==in_min&&LUT_i.input_end==in_max&&LUT_i.layer==ri&&LUT_i.input_rbit==r_bit){//OR
 		LUT_i.output.push_back({xi,yi,ri});
 		toBeFilled=false;
 		break;
 	      }
 	    }
-	  }*/
+	  }
 	  if(toBeFilled){
 	    LUT LUT_i;
 	    LUT_i.input_begin=in_min;
 	    LUT_i.input_end=in_max;
-		LUT_i.input_rbit_start=r_bit_start;
-		LUT_i.input_rbit_end=r_bit_end;	
+		LUT_i.input_rbit=r_bit;	
 	    LUT_i.layer=ri;
 	    LUT_i.output.push_back({xi,yi,ri});
-	    v_LUT.push_back(LUT_i);
+	    v_LUT.at(ri).at(msb).push_back(LUT_i);
 	    lcount[ri]++;
 	  }
 	}
+	size_t total_size = 0;
+	for (const auto& inner_vec : v_LUT) {
+    	for(const auto& most_inner_vec : inner_vec ){
+			total_size += most_inner_vec.size();
+		}
+	}
 	printf("\033[1A\033[1KLUT %5zu (%5.2f%% of original #LUTs) input pattern %5lld/%5d=%5.2f\n"
-		,v_LUT.size(),(double)v_LUT.size()/max_LUT*100.,requirement->GetEntries(),N,(double)requirement->GetEntries()/N*100.);
+		,total_size,(double)total_size/max_LUT*100.,requirement->GetEntries(),N,(double)requirement->GetEntries()/N*100.);
       }}//ri loop
     }//yi loop
   }//xi loop
