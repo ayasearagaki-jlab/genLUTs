@@ -61,8 +61,11 @@ public:
 		delete hout;
 		for(int i=0;i<v_hin.size();i++){delete v_hin.at(i);}
 		for(int i=0;i<v_hout.size();i++){delete v_hout.at(i);}
+		if(LUT&&LUT->IsOpen()){delete luttree;}
+		delete LUT;
 
 		delete hin;
+		hin=nullptr;
 	}
 
 	int GetNLayer()const{return z.size();}
@@ -108,13 +111,18 @@ public:
 	void RebinRInputAllPlane(int rebin_r_num){
 		if(rebin_r_num==1){return;}
 		cout<<endl<<"RebinRInputAllPlane make all Input Plane reset, so use this function before fill"<<endl;
-		
 		v_hin.clear();
-		delete hin;
-		int in_r_bin=ceil(in_phi_bin/rebin_r_num);//hinのrのbin数を設定
 		
-		hin=new TH2D("in","in",in_phi_bin,in_phi_min,in_phi_max,in_r_bin,in_r_min,in_r_max);//hinを再定義
+		
+			delete hin;
+			hin=nullptr;
+		
+			
 
+		in_r_bin=ceil(in_phi_bin/rebin_r_num);//hinのrのbin数を設定
+		
+		hin=new TH2D("in_rebin","in_rebin",in_phi_bin,in_phi_min,in_phi_max,in_r_bin,in_r_min,in_r_max);//hinを再定義
+		
 		for(int ri=0;ri<z.size();ri++){
     		double phi_L_min=phi_min-qA_pT_max*(r_max.at(ri));//FIXME OK only if phi_min,phi_max>0
     		double phi_L_max=phi_max-qA_pT_min*(r_min.at(ri));
@@ -139,10 +147,9 @@ public:
 					,(int)pow(2,ceil(dri_bits_length)),hin->GetYaxis()->GetBinLowEdge(r_min_bin),hin->GetYaxis()->GetBinLowEdge(r_min_bin+(int)pow(2,ceil(dri_bits_length))));//origin
 			v_hin.push_back(hin_l);//r_iが変数なので使わない?
 			v_dphi[ri]=static_cast<int>(std::round(dPhi_bits));
-
-
-
 		}//for loop
+		std::cout<<"set LUT rebinnum="<<rebin_r_num<<endl; 
+
 	}
 
 	TH2D* GetAndMergeHoughPlane(){
@@ -154,9 +161,43 @@ public:
 
 
 	}
+	
+	void WritingLUT(double input_phi, int noflayer, double input_r);
 
 
+	
+	void SetLUT(int resolution){
+		RebinRInputAllPlane(resolution);
+		LUT = new TFile(Form("../requirement/requirement-%d-%d_ver_r_%d.root",GetNbitsqA_pT(), GetNbitsOutputPhi(), resolution), "read");
+		luttree = (TTree*)LUT->Get("requirement");
+			
+		luttree->SetBranchAddress("input_begin", &in_min);
+    	luttree->SetBranchAddress("input_end", &in_max);
+    	luttree->SetBranchAddress("input_r_bit", &r_bit);
+    	luttree->SetBranchAddress("output_x", &xi);
+    	luttree->SetBranchAddress("output_y", &yi);
+    	luttree->SetBranchAddress("output_l", &layer);
 
+		return;
+				
+		
+	
+	}
+	
+
+	int GetNLUT(){
+		if(!luttree){cerr<<"luttree is null do SetLUT!! in GetNLUT"<<endl;return-1;}
+		
+		return luttree->GetEntries();
+	}
+
+	void CloseLUT(){
+		if(luttree){delete luttree;luttree=nullptr;}
+		if(!LUT){cerr<<"LUT Tfile is null in close"<<endl;return;}
+		if(LUT&&LUT->IsOpen()){LUT->Close();cout<<"closed Tfile LUT"<<endl;return;}
+		else{cerr<<"LUT Tfile is not open? What's up ?"<<endl;return;}
+
+	}
 
 
 
@@ -164,7 +205,7 @@ private:
 	
 //Input
 	std::vector<double> dr={0,0,0,0,0,0};	
-	std::vector<double> z={1500,1700,2000,2250,2600,3000};
+	std::vector<double> z={1500,1700,1940,2230,2525,2840};
   	std::vector<double> r_max;
   	std::vector<double> r_min;
 	double eta_max=2.0;
@@ -176,10 +217,12 @@ private:
   	double in_r_max=1023.984375;  
 	int nofbit=16;
 	int in_phi_bin=pow(2,nofbit);
-	TH2D* hin;
+	int in_r_bin=pow(2,nofbit);
+	TH2D* hin=nullptr;
 	std::vector<TH2D*> v_hin;
 	vector<vector<double>> v_phi_L;
 	int v_dphi[6];
+
 
 
 	
@@ -192,5 +235,19 @@ private:
   	int qA_pT_bin=216;
 	TH2D* hout;
 	vector<TH2D*>v_hout;
+
+
+//LUT
+
+	TFile *LUT=nullptr;
+	TTree *luttree=nullptr;
+	int in_min, in_max, xi, yi, layer, r_bit;
+
+
+
+
+
+
+
 };
 #endif

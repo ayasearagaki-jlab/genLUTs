@@ -8,7 +8,7 @@ void writingLUT_r(){
 	double input_phi=0.35;//FIXME
 	int noflayer=2;//FIXME
 	double input_r=500.0;//FIXME
-	int resolution=2048*2;
+	int resolution=512;
 	lut.RebinRInputAllPlane(resolution); 
 	cout<<"input phi is "<<input_phi<<" inpur r is "<<input_r<<" layer number is "<<noflayer<<" using resolution="<<resolution<<" LUT"<<endl;
 	if(input_phi>lut.GetMaxInputPhi()||input_phi<lut.GetMinInputPhi()){

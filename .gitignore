@@ -2,6 +2,8 @@
 /log/*
 !/log/.gitkeep
 
+/macros/test.cc
+
 /Tfile/*
 !/Tfile/.gitkeep
 
@@ -11,3 +13,5 @@
 /png/*
 !/png/.gitkeep
 
+/wrapper/*
+!/wrapper/.gitkeep

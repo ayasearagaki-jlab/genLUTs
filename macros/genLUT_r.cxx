@@ -1,5 +1,7 @@
 //genLUT.cxx
 #include"/Users/griffon/efttrackingWS/genLUTs/include/LUTclass.h"
+#include "../include/LUTclass.cpp"
+
 struct pos
 {
   int x;
@@ -22,7 +24,7 @@ void genLUT_r(){
   int max_LUT=300e3;
   int max_FF=3.4e6;
   
-  int resolution=1024;//FIXME resolution of r bit
+  int resolution=512;//FIXME resolution of r bit
   const int nlayer=lut.GetNLayer();	
   lut.RebinRInputAllPlane(resolution); 
 
@@ -72,14 +74,14 @@ void genLUT_r(){
 
 for(xi=1;xi<=hout->GetNbinsX();xi++){
     double xmin=hout->GetXaxis()->GetBinLowEdge(xi);
-    double xmean=hout->GetXaxis()->GetBinCenter(xi);
+   // double xmean=hout->GetXaxis()->GetBinCenter(xi);
     double xmax=hout->GetXaxis()->GetBinUpEdge(xi);
-    double dx=xmax-xmean;//symmetric bin assume
+    //double dx=xmax-xmean;//symmetric bin assume
     for(yi=1;yi<=hout->GetNbinsY();yi++){
       double ymin=hout->GetYaxis()->GetBinLowEdge(yi);
-      double ymean=hout->GetYaxis()->GetBinCenter(yi);
+     // double ymean=hout->GetYaxis()->GetBinCenter(yi);
       double ymax=hout->GetYaxis()->GetBinUpEdge(yi);
-      double dy=ymax-ymean;//symmetric bin assume
+      //double dy=ymax-ymean;//symmetric bin assume
 		for(ri=0;ri<nlayer;ri++){
 		for(r_bit=1;r_bit<=v_hin.at(ri)->GetNbinsY();r_bit++){
 			r_bit_start=r_bit;
