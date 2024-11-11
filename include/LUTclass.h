@@ -169,6 +169,14 @@ public:
 	void SetLUT(int resolution){
 		RebinRInputAllPlane(resolution);
 		LUT = new TFile(Form("../requirement/requirement-%d-%d_ver_r_%d.root",GetNbitsqA_pT(), GetNbitsOutputPhi(), resolution), "read");
+	
+		if (!LUT || LUT->IsZombie()) {
+    		std::cerr << "Error: TFile about LUT could not be opened or does not exist. Operation aborted." << std::endl;
+    		delete LUT; // 念のためのクリーンアップ
+    		LUT=nullptr;
+			exit(1);     // 即座にプログラムを終了
+		}	
+		
 		luttree = (TTree*)LUT->Get("requirement");
 			
 		luttree->SetBranchAddress("input_begin", &in_min);

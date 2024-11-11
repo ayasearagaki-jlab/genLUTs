@@ -6,7 +6,7 @@ LUTClass lut;
 
 
 void readevent(){
-	int resolution = 1024*2*2;//FIXME
+	int resolution = 1024;//FIXME
 	int event_num=0;//FIXME
 
 
