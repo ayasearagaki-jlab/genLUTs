@@ -7,15 +7,20 @@
 class LUTClass {
 
 public:
-	LUTClass(){
+	LUTClass(bool flag=true):flagendcap(flag){
 		v_phi_L=vector<vector<double>>(2);
 
 		hin=new TH2D("in","in",in_phi_bin,in_phi_min,in_phi_max,in_phi_bin,in_r_min,in_r_max);
 		hout=new TH2D("out","out;phi_t;qA/p_{T}",phi_bin,phi_min,phi_max,qA_pT_bin,qA_pT_min,qA_pT_max);
+	    hin_barrel=new TH1D("in_barrel","in_barrel",in_phi_bin,in_phi_min,in_phi_max);
+		hout_merge=new TH2D("out_merge","out_merge;phi_t;qA/p_{T}",phi_bin,phi_min,phi_max,qA_pT_bin,qA_pT_min,qA_pT_max);
+
+
 //high eta mode calculation		
+		if(flag){
 		for(int i=0;i<z.size();i++){
-			double ri_max=2.0*z.at(i)*atan(exp(-eta_max));
-			double ri_min=2.0*z.at(i)*atan(exp(-eta_min));
+			double ri_max=(z.at(i)-Z)*tan(2.0*atan(exp(-eta_max)));
+			double ri_min=(z.at(i)-Z)*tan(2.0*atan(exp(-eta_min)));
 
 			r_max.push_back(ri_max);
 			r_min.push_back(ri_min);
@@ -52,23 +57,51 @@ public:
 
 
 
-		}
+		}//endcap construct
+		}else{
+			for(int ri=0;ri<barrel_r.size();ri++){
+    			double phi_L_min=phi_min-qA_pT_max*(barrel_r.at(ri)+barrel_dr.at(ri));//FIXME OK only if phi_min,phi_max>0
+    			double phi_L_max=phi_max-qA_pT_min*(barrel_r.at(ri)-barrel_dr.at(ri));
+    			int phi_L_min_bin=hin->FindBin(phi_L_min);
+    			int phi_L_max_bin=hin->FindBin(phi_L_max);
+    			double dPhi=hin->GetXaxis()->GetBinUpEdge(phi_L_max_bin)-hin->GetXaxis()->GetBinLowEdge(phi_L_min_bin);
+    			int dPhi_bits=phi_L_max_bin-phi_L_min_bin+1;
+    			double dPhi_bits_length=TMath::Log2(dPhi_bits);
+    			printf("[%8.5f,%8.5f] [0x%04x,0x%04x] dPhi=%8.5f (=%d [0x%04x] pattern=%.1f bins)\n",phi_L_min,phi_L_max,phi_L_min_bin,phi_L_max_bin,dPhi,dPhi_bits,dPhi_bits,dPhi_bits_length);
+    			TH1D* hin_l=new TH1D(Form("in%d",ri),Form("in%d",ri),(int)pow(2,ceil(dPhi_bits_length)),hin->GetXaxis()->GetBinLowEdge(phi_L_min_bin),hin->GetXaxis()->GetBinLowEdge(phi_L_min_bin+(int)pow(2,ceil(dPhi_bits_length))));//origin
+    		//printf("%d %e\n",hin_l->GetNbinsX(),hin_l->GetBinWidth(1)-hin->GetBinWidth(1));
+    		//TH1D* hin_l=new TH1D(Form("in%d",ri),Form("in%d",ri),(int)pow(2,10),hin->GetXaxis()->GetBinLowEdge(phi_L_min_bin),hin->GetXaxis()->GetBinLowEdge(phi_L_min_bin+(int)pow(2,ceil(dPhi_bits_length))));//10 bits-keep same bin edge but merge some bins
+    			v_hin_barrel.push_back(hin_l);
+  			}
+			for(int ri=0;ri<barrellayer;ri++){
+				TH2D* hout_l=(TH2D*)hout->Clone(Form("hout_%d",ri));
+				v_hout.push_back(hout_l);
+				v_hout.at(ri)->SetTitle(Form("Hough Plane in layer%d;phi_t;qA/p_{T}",ri));
+			}
+
+
+		}//barrel construct
 		
 
 	}
 	
 	~LUTClass(){
 		delete hout;
-		for(int i=0;i<v_hin.size();i++){delete v_hin.at(i);}
+		if(flagendcap){if(!flagsetLUT||(LUT&&LUT->IsOpen())){for(int i=0;i<v_hin.size();i++){delete v_hin.at(i);}}
+		}else{if(!flagsetLUT||(LUT&&LUT->IsOpen())){for(int i=0;i<v_hin_barrel.size();i++){delete v_hin_barrel.at(i);}}}
 		for(int i=0;i<v_hout.size();i++){delete v_hout.at(i);}
 		if(LUT&&LUT->IsOpen()){delete luttree;}
 		delete LUT;
 
 		delete hin;
-		hin=nullptr;
+		delete hin_barrel;
+		delete hout_merge;
 	}
 
-	int GetNLayer()const{return z.size();}
+	int GetNLayer()const{
+		if(flagendcap){return z.size();}
+		else{return barrel_r.size();}
+	}
 
 	vector<double> GetMaxInputLPhi(){return v_phi_L.at(1);}
 	vector<double> GetMinInputLPhi(){return v_phi_L.at(0);}
@@ -77,8 +110,8 @@ public:
 	
 	TH2D* GetHoughPlane(){return hout;}
 	
-	vector<TH2D*> GetInputLPlane(){return v_hin;}//L means for each layer the maximum and minimum of region of input about geometry using eta.
-	TH2D* GetInputPlane(){return hin;}//Only Input is  requirement from setting of eft project or ROD.
+	vector<TH2D*> GetInputLPlane(){if(flagendcap){return v_hin;}else{cerr<<"GetInputLPlane is for endcap"<<endl;exit(1);}}//L means for each layer the maximum and minimum of region of input about geometry using eta.
+	TH2D* GetInputPlane(){if(flagendcap){return hin;}else{cerr<<"GetInputPlane is for endcap"<<endl;exit(1);}}//Only Input is  requirement from setting of eft project or ROD.
 	vector<double> GetRMax(){return r_max;}
 	vector<double> GetRMin(){return r_min;}
 
@@ -94,7 +127,7 @@ public:
 	int Getnofbit(){return nofbit;}
 
 	void AddCountHoughPlane(int xbin,int ybin, int layer){
-		if(xbin<1||ybin<1||xbin>hout->GetNbinsX()||ybin>hout->GetNbinsY()||layer<0||layer>=6){
+		if(xbin<1||ybin<1||xbin>hout->GetNbinsX()||ybin>hout->GetNbinsY()||layer<0){
 			cerr<<":AddCountHoughPlane out range of bin number"<<endl;
 			return ;
 		}
@@ -109,6 +142,8 @@ public:
 	vector<TH2D*> GetEachHoughPlane(){return v_hout;}
 
 	void RebinRInputAllPlane(int rebin_r_num){
+		if(!flagendcap){cerr<<"RebinRInputAllPlane is valid in barrel operation"<<endl;return;}
+
 		if(rebin_r_num==1){return;}
 		cout<<endl<<"RebinRInputAllPlane make all Input Plane reset, so use this function before fill"<<endl;
 		v_hin.clear();
@@ -152,42 +187,91 @@ public:
 
 	}
 
-	TH2D* GetAndMergeHoughPlane(){
-		TH2D *hout_merge=new TH2D("out_merge","out_merge;phi_t;qA/p_{T}",phi_bin,phi_min,phi_max,qA_pT_bin,qA_pT_min,qA_pT_max);
 
-		for(int ri=0;ri<z.size();ri++){hout_merge->Add(v_hout.at(ri));}
-		
-		return hout_merge;
-
-
+	void FlatEachHoughPlane(){
+		for(int ri=0;ri<v_hout.size();ri++){
+			TH2D* hout_copy=(TH2D*)v_hout.at(ri)->Clone(Form("hout%d_copy",ri));
+			v_hout.at(ri)->Divide(hout_copy);
+		}
 	}
 	
-	void WritingLUT(double input_phi, int noflayer, double input_r);
+	void ResetEachHoughPlane(){
+		for(int ri=0;ri<v_hout.size();ri++){v_hout.at(ri)->Reset();}
+		hout_merge->Reset();
+	}
 
+
+	TH2D* GetAndMergeHoughPlane(){
+
+		for(int ri=0;ri<v_hout.size();ri++){
+			if(v_hout.at(ri)->Integral()==0){cout<<"layer"<<ri<<"Hough Plane is empty!!"<<endl;}
+			hout_merge->Add(v_hout.at(ri));
+		}
+		
+		return hout_merge;
+	}
+	
+	void WritingLUT(double input_phi, int noflayer, double input_r,int physlayer);
+
+	void WritingLUT(double input_phi, int noflayer,int physlayer);
 
 	
 	void SetLUT(int resolution){
-		RebinRInputAllPlane(resolution);
-		LUT = new TFile(Form("../requirement/requirement-%d-%d_ver_r_%d.root",GetNbitsqA_pT(), GetNbitsOutputPhi(), resolution), "read");
-	
-		if (!LUT || LUT->IsZombie()) {
-    		std::cerr << "Error: TFile about LUT could not be opened or does not exist. Operation aborted." << std::endl;
-    		delete LUT; // 念のためのクリーンアップ
-    		LUT=nullptr;
-			exit(1);     // 即座にプログラムを終了
-		}	
-		
-		luttree = (TTree*)LUT->Get("requirement");
-			
-		luttree->SetBranchAddress("input_begin", &in_min);
-    	luttree->SetBranchAddress("input_end", &in_max);
-    	luttree->SetBranchAddress("input_r_bit", &r_bit);
-    	luttree->SetBranchAddress("output_x", &xi);
-    	luttree->SetBranchAddress("output_y", &yi);
-    	luttree->SetBranchAddress("output_l", &layer);
+		if(flagendcap){
+			cout<<"Set LUT in endcap and R_rebinnum="<<resolution<<endl;
 
-		return;
-				
+			LUT = new TFile(Form("../requirement/requirement-%d-%d_ver_r_%d.root",GetNbitsqA_pT(), GetNbitsOutputPhi(), resolution), "read");
+	
+			if (!LUT || LUT->IsZombie()) {
+    			std::cerr << "Error: TFile about LUT could not be opened or does not exist. Operation aborted." << std::endl;
+    			delete LUT; // 念のためのクリーンアップ
+    			LUT=nullptr;
+				exit(1);     // 即座にプログラムを終了
+			}	
+		
+			luttree = (TTree*)LUT->Get("requirement");
+			
+			luttree->SetBranchAddress("input_begin", &in_min);
+    		luttree->SetBranchAddress("input_end", &in_max);
+    		luttree->SetBranchAddress("input_r_bit", &r_bit);
+    		luttree->SetBranchAddress("output_x", &xi);
+    		luttree->SetBranchAddress("output_y", &yi);
+    		luttree->SetBranchAddress("output_l", &layer);
+			for(int i=0;i<v_hin.size();i++){delete v_hin.at(i);}
+			v_hin.clear();
+			for(int ri=0;ri<z.size();ri++){
+				TH2D *endcap_l=(TH2D*)LUT->Get(Form("in%d",ri));
+				v_hin.push_back(endcap_l);
+			}
+
+
+
+			flagsetLUT=true;
+			return;
+		}else{
+			cout<<"In Barrel operation resolution value is valid"<<endl;
+			LUT = new TFile(Form("../requirement/requirement-%d-%d.root",GetNbitsqA_pT(), GetNbitsOutputPhi()), "read");
+			if (!LUT || LUT->IsZombie()) {
+    			std::cerr << "Error: TFile about LUT could not be opened or does not exist. Operation aborted." << std::endl;
+    			delete LUT; // 念のためのクリーンアップ
+    			LUT=nullptr;
+				exit(1);     // 即座にプログラムを終了
+			}	
+			luttree = (TTree*)LUT->Get("requirement");
+			luttree->SetBranchAddress("input_begin", &in_min);
+    		luttree->SetBranchAddress("input_end", &in_max);
+    		luttree->SetBranchAddress("output_x", &xi);
+    		luttree->SetBranchAddress("output_y", &yi);
+    		luttree->SetBranchAddress("output_l", &layer);
+			for(int i=0;i<v_hin_barrel.size();i++){delete v_hin_barrel.at(i);}
+			v_hin_barrel.clear();
+			for(int ri=0;ri<barrel_r.size();ri++){
+				TH1D *barrel_l=(TH1D*)LUT->Get(Form("in%d",ri));
+				v_hin_barrel.push_back(barrel_l);
+			}
+			
+			flagsetLUT=true;
+			return;}
 		
 	
 	}
@@ -201,6 +285,7 @@ public:
 
 	void CloseLUT(){
 		if(luttree){delete luttree;luttree=nullptr;}
+		
 		if(!LUT){cerr<<"LUT Tfile is null in close"<<endl;return;}
 		if(LUT&&LUT->IsOpen()){LUT->Close();cout<<"closed Tfile LUT"<<endl;return;}
 		else{cerr<<"LUT Tfile is not open? What's up ?"<<endl;return;}
@@ -210,10 +295,14 @@ public:
 
 
 private:
-	
+	bool flagendcap=true;
+	bool flagsetLUT=false;	
 //Input
 	std::vector<double> dr={0,0,0,0,0,0};	
 	std::vector<double> z={1500,1700,1940,2230,2525,2840};
+	std::vector<double> barrel_r={291,400,562,762,1000};
+	std::vector<double> barrel_dr={0,0,0,0,0};
+	int barrellayer=9;
   	std::vector<double> r_max;
   	std::vector<double> r_min;
 	double eta_max=2.0;
@@ -227,9 +316,14 @@ private:
 	int in_phi_bin=pow(2,nofbit);
 	int in_r_bin=pow(2,nofbit);
 	TH2D* hin=nullptr;
+	TH1D* hin_barrel=nullptr;
 	std::vector<TH2D*> v_hin;
+	std::vector<TH1D*> v_hin_barrel;
+
 	vector<vector<double>> v_phi_L;
 	int v_dphi[6];
+	
+	double Z=-150;
 
 
 
@@ -243,6 +337,7 @@ private:
   	int qA_pT_bin=216;
 	TH2D* hout;
 	vector<TH2D*>v_hout;
+	TH2D *hout_merge=nullptr;
 
 
 //LUT

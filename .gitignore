@@ -15,3 +15,7 @@
 
 /wrapper/*
 !/wrapper/.gitkeep
+
+/checkresult/sample/*
+!/checkresult/sample/.gitkeep
+

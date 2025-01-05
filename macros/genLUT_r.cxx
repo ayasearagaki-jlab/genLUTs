@@ -102,7 +102,7 @@ for(xi=1;xi<=hout->GetNbinsX();xi++){
 	double phi_min=*min_element(begin(phi_value),end(phi_value));
 	double phi_max=*max_element(begin(phi_value),end(phi_value));
 	if(v_hist_phiminmax[ri]==nullptr){cerr<<"v_hist_null!!"<<endl;break;}
-	v_hist_phiminmax.at(ri)->Fill(phi_min,phi_max);
+	//v_hist_phiminmax.at(ri)->Fill(phi_min,phi_max);
 	//in_min=hin->FindBin(phi_min);
 	//in_max=hin->FindBin(phi_max);
 	in_min=v_hin.at(ri)->GetXaxis()->FindBin(phi_min);
@@ -152,9 +152,9 @@ for(xi=1;xi<=hout->GetNbinsX();xi++){
 
 
   requirement->Write();
-  /*for(ri=0;ri<z.size();ri++){
-    v_hin.at(ri)->Write();
-  }*/
+  for(ri=0;ri<nlayer;ri++){
+    v_hin.at(ri)->Write(Form("in%d",ri));
+  }
 TFile *saveTH=new TFile(Form("../Tfile/inputphimaxmin_ver_r_%d.root",resolution),"RECREATE");
 	//v_hist_phiminmax.at(0)->Draw("colz");
 	for(ri=0;ri<v_hist_phiminmax.size();ri++){

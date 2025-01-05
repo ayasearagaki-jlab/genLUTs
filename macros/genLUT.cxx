@@ -20,7 +20,7 @@ void genLUT(){
   int max_LUT=300e3;
   int max_FF=3.4e6;
 
- 
+return; 
 
   TH2D *hout=lut.GetHoughPlane();
   TH2D *hin=lut.GetInputPlane();
@@ -43,7 +43,7 @@ void genLUT(){
  const int nlayer=lut.GetNLayer();	 
   std::cout<<std::endl;
 	
-  TFile* fout= TFile::Open(Form("../requirement/requirement-%d-%d.root",lut.GetNbitsqA_pT(),lut.GetNbitsOutputPhi()),"recreate");
+  TFile* fout= TFile::Open(Form("../requirement/requirement-%d-%d_re.root",lut.GetNbitsqA_pT(),lut.GetNbitsOutputPhi()),"recreate");
   TTree* requirement=new TTree("requirement","requirement");
   requirement->Branch("input_begin",&in_min);
   requirement->Branch("input_end",&in_max);
@@ -51,14 +51,7 @@ void genLUT(){
   requirement->Branch("output_y",&yi);
   requirement->Branch("output_l",&ri);
   int N=hout->GetNbinsX()*hout->GetNbinsY()*(nlayer);
-//return;
-	vector<TH2D*>v_hist_phiminmax;
-	for(ri=0;ri<nlayer;ri++){
-		TH2D *hist_phiminmax_ri=new TH2D(Form("phiminmax_%d",ri),Form("phiminmax_%d",ri),v_dphi[ri],phi_l_min.at(ri),phi_l_max.at(ri),v_dphi[ri],phi_l_min.at(ri),phi_l_max.at(ri));
-		v_hist_phiminmax.push_back(hist_phiminmax_ri);
-	}
-  	//v_hist_phiminmax.at(0)->Fill(3.0,0.8);
-	//v_hist_phiminmax.at(0)->Draw("colz");
+
 
 for(xi=1;xi<=hout->GetNbinsX();xi++){
     double xmin=hout->GetXaxis()->GetBinLowEdge(xi);
@@ -82,8 +75,6 @@ for(xi=1;xi<=hout->GetNbinsX();xi++){
 	//double phi_max=xmean-ymean*r_min.at(ri)+sqrt(pow(dx,2)+pow(dy*r_min.at(ri),2)+pow(ymean*dr.at(ri),2));
 	double phi_min=*min_element(begin(phi_value),end(phi_value));
 	double phi_max=*max_element(begin(phi_value),end(phi_value));
-	if(v_hist_phiminmax[ri]==nullptr){cerr<<"v_hist_null!!"<<endl;break;}
-	v_hist_phiminmax.at(ri)->Fill(phi_min,phi_max);
 	//in_min=hin->FindBin(phi_min);
 	//in_max=hin->FindBin(phi_max);
 	in_min=v_hin.at(ri)->GetXaxis()->FindBin(phi_min);
@@ -92,9 +83,11 @@ for(xi=1;xi<=hout->GetNbinsX();xi++){
 	//printf("%f %f %d %d \n",phi_min,phi_max,in_min,in_max);
 	//getchar();
 	requirement->Fill();
-	if(in_min>lut.GetNbitsInputPhi()||in_max<=0){
+	if(in_min>lut.GetNbitsInputPhi()||in_max<0){
 	  printf("\033[1A\033[1Kout of range [%d,%d]\n\n",xi,yi);
+		
 	}else{
+	
 	  bool toBeFilled=true;
 	  if(v_LUT.size()!=0){
 	    for(auto LUT_i:v_LUT){
@@ -114,12 +107,14 @@ for(xi=1;xi<=hout->GetNbinsX();xi++){
 	    v_LUT.push_back(LUT_i);
 	    lcount[ri]++;
 	  }
-	}
+	
 	printf("\033[1A\033[1KLUT %5zu (%5.2f%% of original #LUTs) input pattern %5lld/%5d=%5.2f\n"
 		,v_LUT.size(),(double)v_LUT.size()/max_LUT*100.,requirement->GetEntries(),N,(double)requirement->GetEntries()/N*100.);
-      }
-    }
-  }
+      	}
+
+	}}}
+    
+  
 	//v_hist_phiminmax.at(0)->Draw("colz");
 
 
@@ -127,14 +122,7 @@ for(xi=1;xi<=hout->GetNbinsX();xi++){
   /*for(ri=0;ri<z.size();ri++){
     v_hin.at(ri)->Write();
   }*/
-TFile *saveTH=new TFile("../Tfile/inputphimaxmin.root","RECREATE");
-	//v_hist_phiminmax.at(0)->Draw("colz");
-	for(ri=0;ri<v_hist_phiminmax.size();ri++){
-		//v_hist_phiminmax.at(ri)->Draw("colz");
-		v_hist_phiminmax.at(ri)->SetTitle("input_phi_minmax;phi_min;phi_max");
-		v_hist_phiminmax.at(ri)->Write(Form("layer%d",ri));
-	}
-	saveTH->Close();
+
 
   fout->Close();
   std::cout<<std::endl;
