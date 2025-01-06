@@ -5,6 +5,7 @@
 /macros/test.cc
 /macro/*.root
 /macro/req_analysis/*.root
+/macro/req_analysis/*.png
 /Tfile/*
 !/Tfile/.gitkeep
 
