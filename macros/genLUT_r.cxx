@@ -1,5 +1,5 @@
 //genLUT.cxx
-#include"/Users/griffon/efttrackingWS/genLUTs/include/LUTclass.h"
+#include"../include/LUTclass.h"
 #include "../include/LUTclass.cpp"
 
 struct pos
@@ -24,7 +24,7 @@ void genLUT_r(){
   int max_LUT=300e3;
   int max_FF=3.4e6;
   
-  int resolution=512;//FIXME resolution of r bit
+  int resolution=512*4;//FIXME resolution of r bit
   const int nlayer=lut.GetNLayer();	
   lut.RebinRInputAllPlane(resolution); 
 

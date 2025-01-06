@@ -299,7 +299,8 @@ private:
 	bool flagsetLUT=false;	
 //Input
 	std::vector<double> dr={0,0,0,0,0,0};	
-	std::vector<double> z={1500,1700,1940,2230,2525,2840};
+	//std::vector<double> z={1500,1700,1940,2230,2525,2840};
+	std::vector<double> z={1940,2230,2525,2840};
 	std::vector<double> barrel_r={291,400,562,762,1000};
 	std::vector<double> barrel_dr={0,0,0,0,0};
 	int barrellayer=9;
