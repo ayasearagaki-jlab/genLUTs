@@ -3,9 +3,9 @@
 !/log/.gitkeep
 
 /macros/test.cc
-/macro/*.root
-/macro/req_analysis/*.root
-/macro/req_analysis/*.png
+/macros/*.root
+/macros/req_analysis/*.root
+/macros/req_analysis/*.png
 /Tfile/*
 !/Tfile/.gitkeep
 
