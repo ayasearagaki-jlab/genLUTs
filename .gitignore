@@ -3,7 +3,8 @@
 !/log/.gitkeep
 
 /macros/test.cc
-
+/macro/*.root
+/macro/req_analysis/*.root
 /Tfile/*
 !/Tfile/.gitkeep
 
